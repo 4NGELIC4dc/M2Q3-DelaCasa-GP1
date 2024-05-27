@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>M2Q3 - DELA CASA</title>
+    <script src="/js files/phaser.min.js"></script>
+    <script src="/js files/AnimatedTiles.min.js"></script>
+    <script type="module" src="/scenes/GameScene1.js"></script>
+</head>
+<body>
+    <script type="module">
+        import { GameScene1 } from './scenes/GameScene1.js';
+
+        // Ensure MainScene is loaded correctly
+        window.addEventListener('load', () => {
+            // Game configuration
+            const config = {
+                type: Phaser.AUTO,
+                width: 420,
+                height: 320,
+                scene: [GameScene1],  
+                physics: {
+                    default: "arcade",
+                    arcade: {
+                        debug: true
+                    }
+                },
+                plugins: {
+                    scene: [
+                        { key: 'AnimatedTiles', plugin: AnimatedTiles, mapping: 'animatedTiles' }
+                    ]
+                }
+            };
+
+            // Initialize the game
+            const game = new Phaser.Game(config);
+        });
+    </script>
+</body>
+</html>
