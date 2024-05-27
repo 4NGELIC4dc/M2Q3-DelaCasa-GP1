@@ -323,4 +323,3 @@ export class GameScene1 extends Phaser.Scene {
         this.player.body.enable = false;
     }
 }
-
