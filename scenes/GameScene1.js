@@ -1,7 +1,7 @@
 export class GameScene1 extends Phaser.Scene {
     constructor() {
         super("GameScene1");
-        this.canBeHurt = true;  // Initialize the hurt flag
+        this.canBeHurt = true;  
     }
 
     preload() {
@@ -14,6 +14,7 @@ export class GameScene1 extends Phaser.Scene {
         this.load.image("txt_game_over", "assets/png/txt_game_over.png");
         this.load.image("heart", "assets/png/34x34heartSprite.png");
         this.load.image("spike", "assets/png/16x16spikeSprite.png");
+        this.load.image("button_retry", "assets/png/button-metal01_retry.png")
         this.load.spritesheet("coin", "assets/png/16x16coinSprite.png", { frameWidth: 16, frameHeight: 16 });
         this.load.spritesheet("knight", "assets/png/16x16 knight.png", { frameWidth: 16, frameHeight: 16 });
         this.load.audio("coinSfx", "assets/mp3/coin_sfx.mp3");
@@ -21,6 +22,7 @@ export class GameScene1 extends Phaser.Scene {
         this.load.audio("jumpSfx", "assets/mp3/jump_sfx.mp3");
         this.load.audio("victorySfx", "assets/mp3/victory_sfx.mp3");
         this.load.audio("loseSfx", "assets/mp3/lose_sfx.mp3");
+        this.load.audio("clickSfx", "assets/mp3/click_sfx.mp3");
         this.load.audio("bgMusic", "assets/mp3/bg_music.mp3");
     }
 
@@ -39,6 +41,7 @@ export class GameScene1 extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setScale(1.5);
         this.player.body.setGravityY(400);
+        this.player.setFlipX(true);
 
         // Colliders
         groundLayer.setCollisionByExclusion([-1]);
@@ -87,12 +90,13 @@ export class GameScene1 extends Phaser.Scene {
         this.gameCompleteFlag = false;
 
         // SFX
-        this.coinSfx = this.sound.add("coinSfx", { volume: 0.05 });
-        this.hurtSfx = this.sound.add("hurtSfx", { volume: 0.10 });
-        this.jumpSfx = this.sound.add("jumpSfx", { volume: 0.25 });
-        this.victorySfx = this.sound.add("victorySfx", { volume: 0.5 });
-        this.loseSfx = this.sound.add("loseSfx", { volume: 0.10 });
-        this.bgMusic = this.sound.add("bgMusic", { volume: 0.05, loop: true });
+        this.coinSfx = this.sound.add("coinSfx", { volume: 0.25 });
+        this.hurtSfx = this.sound.add("hurtSfx", { volume: 0.25 });
+        this.jumpSfx = this.sound.add("jumpSfx", { volume: 0.75 });
+        this.victorySfx = this.sound.add("victorySfx", { volume: 0.25 });
+        this.loseSfx = this.sound.add("loseSfx", { volume: 0.25 });
+        this.clickSfx = this.sound.add("clickSfx", { volume: 0.25 });
+        this.bgMusic = this.sound.add("bgMusic", { volume: 0.25, loop: true });
         this.bgMusic.play();
 
         // Hearts UI
@@ -102,7 +106,7 @@ export class GameScene1 extends Phaser.Scene {
             setXY: { x: this.cameras.main.width - 80, y: 20, stepX: 30 }
         });
         this.hearts.children.iterate(heart => {
-            heart.setScale(0.5); // Adjust heart size
+            heart.setScale(0.5);
             heart.setScrollFactor(0);
         });
 
@@ -112,10 +116,8 @@ export class GameScene1 extends Phaser.Scene {
         this.createChests(map.getObjectLayer("chestObject").objects);
         this.createSpikes(map.getObjectLayer("spikeObject").objects);
 
-        // Input
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Disable debug drawing
         this.physics.world.drawDebug = false;
     }
 
@@ -218,12 +220,7 @@ export class GameScene1 extends Phaser.Scene {
 
     openChest(player, chest) {
         if (this.hasKey) {
-            this.gameCompleteFlag = true;
-            const completeText = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "txt_game_complete");
-            completeText.setScrollFactor(0);
-            completeText.setScale(0.30);
-            this.victorySfx.play();
-            this.bgMusic.stop();  // Stop background music
+            this.gameComplete();
         } else {
             chest.setTint(0xff0000);
             this.time.addEvent({
@@ -257,12 +254,43 @@ export class GameScene1 extends Phaser.Scene {
             }
             this.canBeHurt = false;
             this.time.addEvent({
-                delay: 1000,  // Delay for 3 seconds
+                delay: 500, 
                 callback: () => {
-                    this.canBeHurt = true;  // Enable hurt after 3 seconds
+                    this.canBeHurt = true;  
                 }
             });
         }
+    }
+
+    gameComplete() {
+        this.gameCompleteFlag = true;
+        this.bgMusic.stop();
+        this.victorySfx.play();
+
+        const completeText = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "txt_game_complete");
+        completeText.setScrollFactor(0);
+        completeText.setScale(0.35);
+
+        // Add retry button
+        const retryButton = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY + 50, "button_retry");
+        retryButton.setScrollFactor(0);
+        retryButton.setScale(0.10);
+        retryButton.setInteractive();
+        retryButton.on('pointerup', () => {
+            this.clickSfx.play();
+            this.scene.restart();
+        });
+
+        retryButton.on('pointerover', () => {
+            retryButton.setTint(0x808080);
+        });
+
+        retryButton.on('pointerout', () => {
+            retryButton.clearTint();
+        });
+
+        this.player.setVelocity(0, 0);
+        this.player.body.enable = false;
     }
 
     gameOver() {
@@ -270,8 +298,29 @@ export class GameScene1 extends Phaser.Scene {
         const gameOverText = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "txt_game_over");
         gameOverText.setScrollFactor(0);
         gameOverText.setScale(0.5);
-        this.bgMusic.stop();  // Stop background music
+        this.bgMusic.stop(); 
         this.loseSfx.play();
+
+        // Add retry button
+        const retryButton = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY + 50, "button_retry");
+        retryButton.setScrollFactor(0);
+        retryButton.setScale(0.10);
+        retryButton.setInteractive();
+        retryButton.on('pointerup', () => {
+            this.clickSfx.play();
+            this.scene.restart();
+        });
+
+        retryButton.on('pointerover', () => {
+            retryButton.setTint(0x808080);
+        });
+
+        retryButton.on('pointerout', () => {
+            retryButton.clearTint();
+        });
+
+        this.player.setVelocity(0, 0);
+        this.player.body.enable = false;
     }
 }
 
